@@ -1,0 +1,1 @@
+/Users/mcs/AndroidStudioProjects/MoonDeveloper/master-claude-code-configs/.claude/agents/test-engineer.md

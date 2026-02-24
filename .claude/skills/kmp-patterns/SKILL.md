@@ -1,0 +1,1 @@
+/Users/mcs/AndroidStudioProjects/MoonDeveloper/master-claude-code-configs/.claude/skills/kmp-patterns/SKILL.md

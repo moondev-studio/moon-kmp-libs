@@ -1,0 +1,1 @@
+/Users/mcs/AndroidStudioProjects/MoonDeveloper/master-claude-code-configs/.claude/commands/prepare-release.md
