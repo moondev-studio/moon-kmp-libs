@@ -17,3 +17,4 @@ dependencyResolutionManagement {
 rootProject.name = "moon-kmp-libs"
 
 include(":moon-analytics-kmp")
+include(":moon-sync-kmp")
