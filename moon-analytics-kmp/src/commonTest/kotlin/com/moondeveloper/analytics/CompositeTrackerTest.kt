@@ -12,7 +12,7 @@ class CompositeTrackerTest {
         val tracker1 = FakeTracker(events1)
         val tracker2 = FakeTracker(events2)
         val composite = CompositeTracker(listOf(tracker1, tracker2))
-        val event = AnalyticsEvent("test_event", mapOf("key" to "value"))
+        val event = AnalyticsEvent("test_event", params = mapOf("key" to "value"))
         composite.logEvent(event)
         assertEquals(1, events1.size)
         assertEquals(1, events2.size)
