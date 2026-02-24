@@ -57,6 +57,9 @@ Splitly, BetOnMe 등 MoonDeveloper 앱에서 공통으로 사용하는 인터페
 - splitly와 Kotlin/Compose 버전 동기화
 - libs.versions.toml로 중앙 관리
 
+## 참조 프로젝트
+- splitly (includeBuild + dependencySubstitution)
+
 ## 의존성 원칙 (절대 규칙)
 - 이 레포의 모든 모듈은 Firebase, Google Play, Apple SDK에 의존하면 안 됨
 - 허용: kotlinx-coroutines, kotlinx-datetime, compose-multiplatform
