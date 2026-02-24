@@ -19,3 +19,4 @@ rootProject.name = "moon-kmp-libs"
 include(":moon-analytics-kmp")
 include(":moon-sync-kmp")
 include(":moon-ui-kmp")
+include(":moon-auth-kmp")
