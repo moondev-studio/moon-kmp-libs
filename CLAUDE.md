@@ -40,18 +40,36 @@ KMP (Kotlin 2.3.0) + Compose Multiplatform + Material 3 + Koin 4.1.1 + Room KMP 
 
 # [moon-kmp-libs 프로젝트 전용]
 
-## 프로젝트 개요
-MoonDeveloper OSS KMP 라이브러리 모노레포.
-Splitly, BetOnMe 등 MoonDeveloper 앱에서 공통으로 사용하는 인터페이스와 유틸리티.
+## 현재 상태
+- Phase A+B 완료, Hardening Phase 진행 중
+- 6개 모듈: analytics, sync, ui, auth, billing, i18n
+- Phase C에서 추가 예정: ocr (moon-ocr-kmp)
 
 ## 모듈 목록
-- build-logic/convention: Convention Plugins (moon.kmp.library, moon.compose.library)
-- moon-analytics-kmp: Analytics/Crash 인터페이스 (Phase A)
+| 모듈 | 상태 | 의존성 |
+|------|------|--------|
+| moon-analytics-kmp | ✅ 완성 | 없음 (순수 인터페이스) |
+| moon-sync-kmp | ✅ 완성 | kotlinx-coroutines, kotlinx-datetime |
+| moon-ui-kmp | ✅ 완성 | compose-multiplatform |
+| moon-auth-kmp | ✅ 완성 | kotlinx-coroutines, kotlinx-datetime |
+| moon-billing-kmp | ✅ 완성 | kotlinx-coroutines, kotlinx-datetime |
+| moon-i18n-kmp | ✅ 완성 | kotlinx-coroutines |
+| moon-ocr-kmp | 📋 계획 | Hardening Step 2에서 추가 |
+
+## Convention Plugins (build-logic/)
+- `moon.kmp.library`: KMP 공통 설정 (android+ios+desktop, JVM17)
+- `moon.compose.library`: Compose Multiplatform 추가 설정
+
+## Hardening Phase 작업 범위
+- Step 1: 의존성 버전 업데이트 (libs.versions.toml)
+- Step 2: moon-ocr-kmp 모듈 추가, commonMain Android 의존성 누수 검증
+- Step 4: 빌드 경고 정리
+- Step 7: README/KDoc/예제코드 작성, Maven Central 설정
 
 ## 빌드 규칙
 - desktopTest만 사용 (allTests 금지)
-- 컴파일 5분 + 실행 5분 타임아웃
-- gradle --stop 선행
+- 컴파일 5분, 실행 5분 타임아웃
+- gradle --stop 선행 필수
 
 ## 버전 정책
 - splitly와 Kotlin/Compose 버전 동기화
