@@ -5,7 +5,7 @@
 ## 앱 포트폴리오
 | 앱 | 상태 | 비고 |
 |-----|------|------|
-| Splitly | Phase 12 (사업자등록 대기) | 정산+가계부, 922 테스트 |
+| Splitly | Phase 12 (사업자등록 대기) | 정산+가계부, 1094 테스트 |
 | BetOnMe | 기획 전 | 습관 내기앱, Splitly 모듈 65% 재사용 |
 | ureen | 홀딩 | 로또 추천앱, v1.0.0 출시 완료 |
 
@@ -41,30 +41,30 @@ KMP (Kotlin 2.3.0) + Compose Multiplatform + Material 3 + Koin 4.1.1 + Room KMP 
 # [moon-kmp-libs 프로젝트 전용]
 
 ## 현재 상태
-- Phase A+B 완료, Hardening Phase 진행 중
-- 6개 모듈: analytics, sync, ui, auth, billing, i18n
-- Phase C에서 추가 예정: ocr (moon-ocr-kmp)
+- 7개 OSS 모듈 (analytics, auth, billing, sync, ui, i18n, ocr)
+- Hardening Phase 완료 (Step 0~9)
+- 테스트: 130 @Test (desktopTest 기준)
+- Maven Central: publishToMavenLocal 검증 완료
+- Dokka API 문서 생성 설정 완료
 
 ## 모듈 목록
-| 모듈 | 상태 | 의존성 |
-|------|------|--------|
-| moon-analytics-kmp | ✅ 완성 | 없음 (순수 인터페이스) |
-| moon-sync-kmp | ✅ 완성 | kotlinx-coroutines, kotlinx-datetime |
-| moon-ui-kmp | ✅ 완성 | compose-multiplatform |
-| moon-auth-kmp | ✅ 완성 | kotlinx-coroutines, kotlinx-datetime |
-| moon-billing-kmp | ✅ 완성 | kotlinx-coroutines, kotlinx-datetime |
-| moon-i18n-kmp | ✅ 완성 | kotlinx-coroutines |
-| moon-ocr-kmp | 📋 계획 | Hardening Step 2에서 추가 |
+| 모듈 | 설명 | 테스트 | 의존성 |
+|------|------|--------|--------|
+| moon-analytics-kmp | Analytics/Crash/Screen/Action/Perf/Conversion tracking | 24 | 없음 (순수 인터페이스) |
+| moon-auth-kmp | Auth abstraction (Google/Apple/Email) | 39 | kotlinx-coroutines, kotlinx-datetime |
+| moon-billing-kmp | IAP abstraction (Play/StoreKit) | 32 | kotlinx-coroutines, kotlinx-datetime |
+| moon-sync-kmp | Offline-first sync engine | 11 | kotlinx-coroutines, kotlinx-datetime |
+| moon-ui-kmp | Adaptive Compose components | 9 | compose-multiplatform |
+| moon-i18n-kmp | Hybrid i18n (bundle + on-demand) | 7 | kotlinx-coroutines |
+| moon-ocr-kmp | OCR & receipt parsing interfaces | 8 | 없음 (순수 인터페이스) |
+
+## 기술 스택
+- Kotlin 2.3.0, CMP 1.10.0, AGP 8.11.2, Gradle 8.14.4
 
 ## Convention Plugins (build-logic/)
 - `moon.kmp.library`: KMP 공통 설정 (android+ios+desktop, JVM17)
 - `moon.compose.library`: Compose Multiplatform 추가 설정
-
-## Hardening Phase 작업 범위
-- Step 1: 의존성 버전 업데이트 (libs.versions.toml)
-- Step 2: moon-ocr-kmp 모듈 추가, commonMain Android 의존성 누수 검증
-- Step 4: 빌드 경고 정리
-- Step 7: README/KDoc/예제코드 작성, Maven Central 설정
+- `MoonPublishPlugin`: Maven Central 배포
 
 ## 빌드 규칙
 - desktopTest만 사용 (allTests 금지)
