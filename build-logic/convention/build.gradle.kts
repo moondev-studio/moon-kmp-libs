@@ -7,6 +7,7 @@ dependencies {
     compileOnly(libs.agp.gradle.plugin)
     compileOnly(libs.compose.gradle.plugin)
     compileOnly(libs.dokka.gradle.plugin)
+    compileOnly(libs.maven.publish.plugin)
 }
 
 gradlePlugin {
@@ -18,6 +19,10 @@ gradlePlugin {
         register("moonComposeLibrary") {
             id = "moon.compose.library"
             implementationClass = "MoonComposeLibraryPlugin"
+        }
+        register("moonPublish") {
+            id = "moon.publish"
+            implementationClass = "MoonPublishPlugin"
         }
     }
 }

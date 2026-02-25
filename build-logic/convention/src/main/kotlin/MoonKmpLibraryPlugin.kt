@@ -10,6 +10,7 @@ class MoonKmpLibraryPlugin : Plugin<Project> {
             pluginManager.apply("org.jetbrains.kotlin.multiplatform")
             pluginManager.apply("com.android.library")
             pluginManager.apply("org.jetbrains.dokka")
+            pluginManager.apply("moon.publish")
 
             configure<KotlinMultiplatformExtension> {
                 androidTarget {
