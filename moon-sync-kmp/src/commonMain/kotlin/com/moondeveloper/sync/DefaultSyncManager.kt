@@ -7,6 +7,18 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlin.time.Clock
 
+/**
+ * Default [SyncManager] implementation with queue-based sync and automatic retry.
+ *
+ * Automatically syncs when items are enqueued and the device is online.
+ * Failed items are retried up to [maxRetries] times.
+ *
+ * @param remoteStore Backend data store for sync operations
+ * @param conflictResolver Strategy for resolving local/remote conflicts
+ * @param networkMonitor Monitors network connectivity
+ * @param queueStore Persistent queue storage
+ * @param maxRetries Maximum retry attempts per item (default: 3)
+ */
 class DefaultSyncManager(
     private val remoteStore: RemoteStore,
     private val conflictResolver: ConflictResolver,

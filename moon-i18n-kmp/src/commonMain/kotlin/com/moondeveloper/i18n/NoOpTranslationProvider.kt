@@ -3,6 +3,7 @@ package com.moondeveloper.i18n
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
+/** No-op [TranslationProvider] that returns raw keys as values. */
 class NoOpTranslationProvider : TranslationProvider {
     override val currentLocale: Flow<AppLocale> = MutableStateFlow(AppLocale("en"))
     override fun getString(key: String): String = key

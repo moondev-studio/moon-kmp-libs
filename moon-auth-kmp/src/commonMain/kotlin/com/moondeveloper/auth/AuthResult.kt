@@ -1,10 +1,23 @@
 package com.moondeveloper.auth
 
+/**
+ * Result type for authentication operations.
+ *
+ * @param T The success data type
+ */
 sealed class AuthResult<out T> {
+    /** Successful operation with result data. */
     data class Success<T>(val data: T) : AuthResult<T>()
+
+    /** Failed operation with a typed [AuthException]. */
     data class Error(val exception: AuthException) : AuthResult<Nothing>()
 }
 
+/**
+ * Typed authentication exceptions for structured error handling.
+ *
+ * 12 subtypes covering all common auth failure scenarios.
+ */
 sealed class AuthException(override val message: String, cause: Throwable? = null) : Exception(message, cause) {
     class InvalidCredentials(cause: Throwable? = null) : AuthException("Invalid credentials", cause)
     class InvalidEmail(cause: Throwable? = null) : AuthException("Invalid email format", cause)

@@ -1,5 +1,6 @@
 package com.moondeveloper.billing
 
+/** Result of a purchase or restore operation. */
 sealed class PurchaseResult {
     data class Success(val productId: String, val purchaseToken: String) : PurchaseResult()
     data class Cancelled(val productId: String) : PurchaseResult()

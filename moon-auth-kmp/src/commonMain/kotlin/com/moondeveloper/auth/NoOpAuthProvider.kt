@@ -3,6 +3,7 @@ package com.moondeveloper.auth
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
+/** No-op [AuthProvider] for unsupported platforms. All sign-in operations return [AuthException.Unknown]. */
 object NoOpAuthProvider : AuthProvider {
     override val currentUser: Flow<AuthUser?> = MutableStateFlow(null)
     override suspend fun signInWithEmail(email: String, password: String): AuthResult<AuthUser> = AuthResult.Error(AuthException.Unknown("NoOp"))

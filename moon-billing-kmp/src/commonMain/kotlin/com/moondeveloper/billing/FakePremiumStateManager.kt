@@ -3,6 +3,11 @@ package com.moondeveloper.billing
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
+/**
+ * In-memory fake [PremiumStateManager] for unit testing.
+ *
+ * Set tier with [setTier], control promo redemption with [redeemShouldSucceed].
+ */
 class FakePremiumStateManager : PremiumStateManager {
     private val _premiumTier = MutableStateFlow(PremiumTier.FREE)
     override val premiumTier: Flow<PremiumTier> = _premiumTier

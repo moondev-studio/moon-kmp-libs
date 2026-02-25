@@ -3,6 +3,12 @@ package com.moondeveloper.auth
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
+/**
+ * In-memory fake [AuthProvider] for unit testing.
+ *
+ * Pre-register users with [registerUser], configure social tokens with [configureSocialLogin],
+ * and inject errors with [simulateError].
+ */
 class FakeAuthProvider : AuthProvider {
 
     private data class RegisteredUser(

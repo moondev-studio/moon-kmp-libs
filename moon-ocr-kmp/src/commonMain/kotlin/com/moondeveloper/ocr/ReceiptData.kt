@@ -1,7 +1,9 @@
 package com.moondeveloper.ocr
 
 /**
- * 파싱된 영수증 데이터.
+ * Parsed receipt data extracted from OCR result.
+ *
+ * All monetary values are in the smallest currency unit (e.g., cents).
  */
 data class ReceiptData(
     val storeName: String? = null,
@@ -12,9 +14,7 @@ data class ReceiptData(
     val currency: String? = null
 )
 
-/**
- * 영수증 항목.
- */
+/** A single line item on a receipt. */
 data class ReceiptItem(
     val name: String,
     val quantity: Int = 1,

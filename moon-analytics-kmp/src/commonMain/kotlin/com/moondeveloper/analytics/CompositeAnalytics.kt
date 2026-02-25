@@ -1,5 +1,15 @@
 package com.moondeveloper.analytics
 
+/**
+ * Unified analytics facade that delegates to all tracker interfaces.
+ *
+ * Combines [AnalyticsTracker], [CrashReporter], [ScreenTracker], [UserActionTracker],
+ * [PerformanceTracker], and [ConversionTracker] into a single entry point.
+ *
+ * Performance events are sampled at [performanceSampleRate] (default 10%).
+ *
+ * @param performanceSampleRate Probability (0.0-1.0) for performance event sampling
+ */
 class CompositeAnalytics(
     private val tracker: AnalyticsTracker,
     private val crashReporter: CrashReporter,

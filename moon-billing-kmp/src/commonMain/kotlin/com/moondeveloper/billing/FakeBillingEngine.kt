@@ -3,6 +3,12 @@ package com.moondeveloper.billing
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
+/**
+ * In-memory fake [BillingEngine] for unit testing.
+ *
+ * Configure products with [setProducts], inject failures with [shouldFail],
+ * and inspect state via [purchasedProduct], [restoreCalled], etc.
+ */
 class FakeBillingEngine : BillingEngine {
     var shouldFail: Boolean = false
     var failException: Throwable = RuntimeException("Fake error")

@@ -3,6 +3,7 @@ package com.moondeveloper.billing
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
+/** No-op [BillingEngine] for unsupported platforms. Purchase operations return errors. */
 object NoOpBillingEngine : BillingEngine {
     override val availableProducts: Flow<List<Product>> = MutableStateFlow(emptyList())
     override val purchaseState: Flow<PurchaseState> = MutableStateFlow(PurchaseState.Idle)

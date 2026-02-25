@@ -1,5 +1,9 @@
 package com.moondeveloper.analytics
 
+/**
+ * Fan-out [AnalyticsTracker] that delegates events to multiple tracker instances.
+ * Useful for sending events to both Firebase and a custom analytics backend.
+ */
 class CompositeTracker(
     private val trackers: List<AnalyticsTracker>
 ) : AnalyticsTracker {
@@ -14,6 +18,9 @@ class CompositeTracker(
     }
 }
 
+/**
+ * Fan-out [CrashReporter] that delegates to multiple reporter instances.
+ */
 class CompositeCrashReporter(
     private val reporters: List<CrashReporter>
 ) : CrashReporter {

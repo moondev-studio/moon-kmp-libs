@@ -1,17 +1,21 @@
 package com.moondeveloper.ocr
 
 /**
- * OCR 엔진 인터페이스.
- * 플랫폼별 구현체: Android(ML Kit), iOS(Vision).
+ * OCR engine interface for text recognition from images.
+ *
+ * Platform implementations: Android (ML Kit), iOS (Vision framework).
+ *
+ * @see NoOpOcrEngine for unsupported platforms
  */
 interface OcrEngine {
     /**
-     * 이미지 바이트 배열에서 텍스트를 인식합니다.
+     * Recognize text from an image byte array.
+     *
+     * @param image Raw image bytes (JPEG, PNG)
+     * @return OCR result with full text, text blocks, and confidence score
      */
     suspend fun recognize(image: ByteArray): OcrResult
 
-    /**
-     * 현재 플랫폼에서 OCR이 사용 가능한지 확인합니다.
-     */
+    /** Check if OCR is available on the current platform. */
     fun isAvailable(): Boolean
 }

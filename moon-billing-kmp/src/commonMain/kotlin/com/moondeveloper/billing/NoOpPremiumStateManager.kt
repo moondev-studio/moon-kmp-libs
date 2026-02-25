@@ -3,6 +3,7 @@ package com.moondeveloper.billing
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
+/** No-op [PremiumStateManager] that always returns [PremiumTier.FREE]. */
 object NoOpPremiumStateManager : PremiumStateManager {
     override val premiumTier: Flow<PremiumTier> = MutableStateFlow(PremiumTier.FREE)
     override suspend fun checkPremiumStatus(): PremiumTier = PremiumTier.FREE

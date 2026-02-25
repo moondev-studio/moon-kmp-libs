@@ -4,6 +4,17 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+/**
+ * [TranslationProvider] that tries bundled translations first, then falls back to remote.
+ *
+ * Fallback chain: bundled source -> remote source -> download on demand -> fallback locale.
+ *
+ * Call [initialize] once at startup to load fallback translations.
+ *
+ * @param bundledSource App-bundled translation source
+ * @param remoteSource Remote translation source with download capability
+ * @param fallbackLocale Locale to use when requested locale is unavailable (default: "en")
+ */
 class HybridTranslationProvider(
     private val bundledSource: BundledTranslationSource,
     private val remoteSource: RemoteTranslationSource,

@@ -1,19 +1,17 @@
 package com.moondeveloper.ocr
 
 /**
- * OCR로 인식된 텍스트 블록.
+ * A block of text recognized by OCR.
  *
- * @property text 블록 내 텍스트
- * @property boundingBox 블록의 경계 사각형 (null이면 위치 정보 없음)
+ * @property text The text content of this block
+ * @property boundingBox Bounding rectangle, or `null` if position data is unavailable
  */
 data class TextBlock(
     val text: String,
     val boundingBox: BoundingBox? = null
 )
 
-/**
- * 텍스트 블록의 경계 사각형.
- */
+/** Bounding rectangle for a text block (pixel coordinates). */
 data class BoundingBox(
     val left: Int,
     val top: Int,

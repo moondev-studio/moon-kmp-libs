@@ -1,5 +1,10 @@
 package com.moondeveloper.sync
 
+/**
+ * Persistent storage for the sync queue.
+ *
+ * Implementations should persist items across app restarts (e.g., Room, SQLite).
+ */
 interface SyncQueueStore {
     suspend fun add(item: SyncQueueItem)
     suspend fun getPending(): List<SyncQueueItem>
@@ -10,6 +15,7 @@ interface SyncQueueStore {
     suspend fun clear()
 }
 
+/** A queued sync operation. */
 data class SyncQueueItem(
     val id: String,
     val entityType: String,
@@ -21,4 +27,5 @@ data class SyncQueueItem(
     val status: SyncQueueStatus = SyncQueueStatus.PENDING
 )
 
+/** Processing status of a [SyncQueueItem]. */
 enum class SyncQueueStatus { PENDING, IN_PROGRESS, FAILED }

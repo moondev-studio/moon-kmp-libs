@@ -3,6 +3,7 @@ package com.moondeveloper.ui
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
+/** Width-based breakpoint classification for responsive layouts. */
 enum class WindowWidthClass {
     /** Phone portrait: width < 600dp */
     Compact,
@@ -12,6 +13,7 @@ enum class WindowWidthClass {
     Expanded
 }
 
+/** Height-based breakpoint classification for responsive layouts. */
 enum class WindowHeightClass {
     /** height < 480dp */
     Compact,
@@ -21,11 +23,13 @@ enum class WindowHeightClass {
     Expanded
 }
 
+/** Combined width and height size classes for the current window. */
 data class WindowSizeClass(
     val width: WindowWidthClass,
     val height: WindowHeightClass
 )
 
+/** Calculate the [WindowSizeClass] from the given window dimensions. */
 fun calculateWindowSizeClass(width: Dp, height: Dp): WindowSizeClass {
     val widthClass = when {
         width < 600.dp -> WindowWidthClass.Compact
