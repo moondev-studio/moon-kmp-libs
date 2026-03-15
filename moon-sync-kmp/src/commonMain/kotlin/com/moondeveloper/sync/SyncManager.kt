@@ -1,6 +1,5 @@
 package com.moondeveloper.sync
 
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -12,8 +11,8 @@ import kotlinx.coroutines.flow.StateFlow
  * @see NoOpSyncManager for testing
  */
 interface SyncManager {
-    /** Number of pending sync items. */
-    val pendingCount: Flow<Int>
+    /** Number of pending sync items. Emits updated count when the queue changes. */
+    val pendingCount: StateFlow<Int>
 
     /** Current sync state. */
     val syncState: StateFlow<SyncState>
