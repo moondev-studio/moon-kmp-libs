@@ -18,6 +18,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -70,11 +71,22 @@ class GooglePlayBillingEngine(
                 }
             }
             BillingClient.BillingResponseCode.USER_CANCELED -> {
-                // Handled via purchase() return value
+                _purchaseState.value = PurchaseState.Idle
+            }
+            BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> {
+                scope.launch { restorePurchases() }
+            }
+            BillingClient.BillingResponseCode.SERVICE_DISCONNECTED,
+            BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
+            BillingClient.BillingResponseCode.BILLING_UNAVAILABLE -> {
+                _purchaseState.value = PurchaseState.Error(
+                    "Billing service unavailable. Please try again."
+                )
+                startConnection()
             }
             else -> {
                 _purchaseState.value = PurchaseState.Error(
-                    billingResult.debugMessage ?: "Purchase failed"
+                    "Code ${billingResult.responseCode}: ${billingResult.debugMessage ?: "Purchase failed"}"
                 )
             }
         }
@@ -100,16 +112,40 @@ class GooglePlayBillingEngine(
             override fun onBillingSetupFinished(billingResult: BillingResult) {
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     reconnectAttempts = 0
+                    scope.launch { queryExistingPurchases() }
                 }
             }
 
             override fun onBillingServiceDisconnected() {
                 if (reconnectAttempts < maxReconnectAttempts) {
                     reconnectAttempts++
-                    startConnection()
+                    scope.launch {
+                        delay(2000L * reconnectAttempts)
+                        if (billingClient?.isReady == false) {
+                            startConnection()
+                        }
+                    }
                 }
             }
         })
+    }
+
+    private suspend fun queryExistingPurchases() {
+        val client = billingClient ?: return
+        val params = QueryPurchasesParams.newBuilder()
+            .setProductType(BillingClient.ProductType.INAPP)
+            .build()
+        client.queryPurchasesAsync(params) { billingResult, purchases ->
+            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                scope.launch {
+                    for (purchase in purchases) {
+                        if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
+                            handlePurchase(purchase)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     override suspend fun queryProducts(productIds: List<String>): List<Product> {
@@ -265,16 +301,21 @@ class GooglePlayBillingEngine(
     }
 
     private suspend fun handlePurchase(purchase: Purchase) {
-        if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
-            if (!purchase.isAcknowledged) {
-                val params = AcknowledgePurchaseParams.newBuilder()
-                    .setPurchaseToken(purchase.purchaseToken)
-                    .build()
-                billingClient?.acknowledgePurchase(params)
+        if (purchase.purchaseState != Purchase.PurchaseState.PURCHASED) return
+        if (!purchase.isAcknowledged) {
+            val params = AcknowledgePurchaseParams.newBuilder()
+                .setPurchaseToken(purchase.purchaseToken)
+                .build()
+            val result = billingClient?.acknowledgePurchase(params)
+            if (result?.responseCode != BillingClient.BillingResponseCode.OK) {
+                _purchaseState.value = PurchaseState.Error(
+                    "Acknowledgment failed: ${result?.debugMessage}"
+                )
+                return
             }
-            for (productId in purchase.products) {
-                _purchaseState.value = PurchaseState.Purchased(productId)
-            }
+        }
+        for (productId in purchase.products) {
+            _purchaseState.value = PurchaseState.Purchased(productId)
         }
     }
 }

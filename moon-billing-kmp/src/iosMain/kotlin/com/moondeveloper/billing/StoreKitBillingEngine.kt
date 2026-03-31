@@ -46,7 +46,8 @@ class StoreKitBillingEngine : BillingEngine {
                     _availableProducts.value = listOf(product)
                     if (cont.isActive) cont.resume(listOf(product))
                 },
-                onError = {
+                onError = { errorMsg ->
+                    println("[Splitly-IAP] queryProducts error: $errorMsg")
                     if (cont.isActive) cont.resume(emptyList())
                 }
             )
@@ -69,6 +70,7 @@ class StoreKitBillingEngine : BillingEngine {
                     )
                 },
                 onError = { errorMsg ->
+                    println("[Splitly-IAP] purchase error: $errorMsg productId=${product.id}")
                     _purchaseState.value = PurchaseState.Error(errorMsg)
                     if (cont.isActive) cont.resume(
                         PurchaseResult.Error(RuntimeException(errorMsg))
@@ -103,6 +105,7 @@ class StoreKitBillingEngine : BillingEngine {
                     }
                 },
                 onError = { errorMsg ->
+                    println("[Splitly-IAP] restore error: $errorMsg")
                     if (cont.isActive) cont.resume(
                         PurchaseResult.Error(RuntimeException(errorMsg))
                     )
