@@ -14,8 +14,10 @@ class MoonPublishPlugin : Plugin<Project> {
                 publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
 
                 // Sign only when GPG key is available (CI or local with gpg agent)
+                // vanniktech in-memory signing: ORG_GRADLE_PROJECT_signingInMemoryKey
                 val hasGpgKey = System.getenv("GPG_PRIVATE_KEY")?.isNotBlank() == true ||
-                    findProperty("signing.gnupg.keyName") != null
+                    System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKey")?.isNotBlank() == true ||
+                    findProperty("signingInMemoryKey") != null
                 if (hasGpgKey) {
                     signAllPublications()
                 }

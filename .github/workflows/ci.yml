@@ -93,21 +93,16 @@ jobs:
             echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Import GPG key
-        run: |
-          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-
       - name: Publish to GitHub Packages
         run: >
           ./gradlew publishAllPublicationsToGitHubPackagesRepository
           -PVERSION_NAME=${{ steps.version.outputs.VERSION }}
-          -Psigning.gnupg.keyName=A5B5E603
-          -Psigning.gnupg.passphrase=${{ secrets.GPG_PASSPHRASE }}
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GH_PAT: ${{ secrets.GH_PAT }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: A5B5E603
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.GPG_PRIVATE_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Notify Slack — GitHub Packages published
         if: success()
@@ -160,21 +155,16 @@ jobs:
             echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Import GPG key
-        run: |
-          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-
       - name: Publish to Maven Central
         run: >
           ./gradlew publishAllPublicationsToMavenCentralRepository
           -PVERSION_NAME=${{ steps.version.outputs.VERSION }}
-          -Psigning.gnupg.keyName=A5B5E603
-          -Psigning.gnupg.passphrase=${{ secrets.GPG_PASSPHRASE }}
         env:
           MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: A5B5E603
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.GPG_PRIVATE_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Notify Slack — Maven Central published
         if: success()
