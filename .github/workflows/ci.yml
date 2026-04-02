@@ -97,12 +97,10 @@ jobs:
         run: >
           ./gradlew publishAllPublicationsToGitHubPackagesRepository
           -PVERSION_NAME=${{ steps.version.outputs.VERSION }}
+          -PskipSigning=true
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GH_PAT: ${{ secrets.GH_PAT }}
-          ORG_GRADLE_PROJECT_signingInMemoryKeyId: A5B5E603
-          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.GPG_PRIVATE_KEY }}
-          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Notify Slack — GitHub Packages published
         if: success()

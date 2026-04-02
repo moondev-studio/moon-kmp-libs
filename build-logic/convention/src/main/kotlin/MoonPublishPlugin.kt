@@ -14,10 +14,10 @@ class MoonPublishPlugin : Plugin<Project> {
                 publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
 
                 // Sign only when GPG key is available (CI or local with gpg agent)
-                // Sign only for Maven Central (required).
-                // GitHub Packages does NOT require signing.
-                val isMavenCentral = System.getenv("MAVEN_CENTRAL_USERNAME")?.isNotBlank() == true
-                if (isMavenCentral) {
+                // Sign only when explicitly requested (Maven Central requires it).
+                // Pass -PskipSigning=true to skip (GitHub Packages does not need signing).
+                val skipSigning = (findProperty("skipSigning") as? String) == "true"
+                if (!skipSigning) {
                     signAllPublications()
                 }
 
