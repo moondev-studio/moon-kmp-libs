@@ -8,8 +8,25 @@ on:
       - '**/build.gradle.kts'
       - 'libs.versions.toml'
       - '.github/workflows/**'
+    tags:
+      - 'v*.*.*'
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g. 1.0.0)'
+        required: true
+        default: '1.0.0'
+      target:
+        description: 'Publish target'
+        required: true
+        type: choice
+        options:
+          - github-packages
+          - maven-central
+          - all
+        default: github-packages
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -47,18 +64,138 @@ jobs:
           path: '**/build/reports/tests/'
           retention-days: 7
 
-  # LICENSE_PENDING: publish after license issued
-  publish-maven:
-    name: Publish to Maven Central
-    if: false
+  publish-github-packages:
+    name: Publish to GitHub Packages
+    if: >
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
+      (github.event_name == 'workflow_dispatch' && (inputs.target == 'github-packages' || inputs.target == 'all'))
     runs-on: self-hosted
     needs: test
     steps:
       - uses: actions/checkout@v4
-      - name: Publish
-        run: ./gradlew publishAllPublicationsToMavenCentralRepository
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle.kts', 'libs.versions.toml') }}
+          restore-keys: ${{ runner.os }}-gradle-
+
+      - name: Resolve version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "VERSION=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            # Strip leading 'v' from tag (v1.2.3 → 1.2.3)
+            echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Import GPG key
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+
+      - name: Publish to GitHub Packages
+        run: >
+          ./gradlew publishAllPublicationsToGitHubPackagesRepository
+          -PVERSION_NAME=${{ steps.version.outputs.VERSION }}
+          -Psigning.gnupg.keyName=A5B5E603
+          -Psigning.gnupg.passphrase=${{ secrets.GPG_PASSPHRASE }}
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+
+      - name: Notify Slack — GitHub Packages published
+        if: success()
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "text": ":package: *moon-kmp-libs ${{ steps.version.outputs.VERSION }}* published to GitHub Packages\nTriggered by: ${{ github.actor }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Notify Slack — GitHub Packages failed
+        if: failure()
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "text": ":x: *moon-kmp-libs* GitHub Packages publish *FAILED* (version: ${{ steps.version.outputs.VERSION }})\nSee: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+  publish-maven-central:
+    name: Publish to Maven Central
+    if: >
+      github.event_name == 'workflow_dispatch' && (inputs.target == 'maven-central' || inputs.target == 'all')
+    runs-on: self-hosted
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle.kts', 'libs.versions.toml') }}
+          restore-keys: ${{ runner.os }}-gradle-
+
+      - name: Resolve version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "VERSION=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Import GPG key
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+
+      - name: Publish to Maven Central
+        run: >
+          ./gradlew publishAllPublicationsToMavenCentralRepository
+          -PVERSION_NAME=${{ steps.version.outputs.VERSION }}
+          -Psigning.gnupg.keyName=A5B5E603
+          -Psigning.gnupg.passphrase=${{ secrets.GPG_PASSPHRASE }}
         env:
           MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
-          GPG_SIGNING_KEY: ${{ secrets.GPG_SIGNING_KEY }}
-          GPG_SIGNING_PASSWORD: ${{ secrets.GPG_SIGNING_PASSWORD }}
+
+      - name: Notify Slack — Maven Central published
+        if: success()
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "text": ":rocket: *moon-kmp-libs ${{ steps.version.outputs.VERSION }}* published to Maven Central\nTriggered by: ${{ github.actor }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Notify Slack — Maven Central failed
+        if: failure()
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: |
+            {
+              "text": ":x: *moon-kmp-libs* Maven Central publish *FAILED* (version: ${{ steps.version.outputs.VERSION }})\nSee: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
