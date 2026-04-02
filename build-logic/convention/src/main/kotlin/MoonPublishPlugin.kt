@@ -14,11 +14,10 @@ class MoonPublishPlugin : Plugin<Project> {
                 publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
 
                 // Sign only when GPG key is available (CI or local with gpg agent)
-                // vanniktech in-memory signing: ORG_GRADLE_PROJECT_signingInMemoryKey
-                val hasGpgKey = System.getenv("GPG_PRIVATE_KEY")?.isNotBlank() == true ||
-                    System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKey")?.isNotBlank() == true ||
-                    findProperty("signingInMemoryKey") != null
-                if (hasGpgKey) {
+                // Sign only for Maven Central (required).
+                // GitHub Packages does NOT require signing.
+                val isMavenCentral = System.getenv("MAVEN_CENTRAL_USERNAME")?.isNotBlank() == true
+                if (isMavenCentral) {
                     signAllPublications()
                 }
 
