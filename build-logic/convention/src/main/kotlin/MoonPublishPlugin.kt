@@ -2,6 +2,7 @@ import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SonatypeHost
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.publish.PublishingExtension
 import org.gradle.kotlin.dsl.configure
 
 class MoonPublishPlugin : Plugin<Project> {
@@ -11,18 +12,18 @@ class MoonPublishPlugin : Plugin<Project> {
 
             configure<MavenPublishBaseExtension> {
                 publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
-                signAllPublications()
 
-                coordinates(
-                    groupId = "com.moondeveloper",
-                    artifactId = project.name,
-                    version = "1.0.0-SNAPSHOT"
-                )
+                // Sign only when GPG key is available (CI or local with gpg agent)
+                val hasGpgKey = System.getenv("GPG_PRIVATE_KEY")?.isNotBlank() == true ||
+                    findProperty("signing.gnupg.keyName") != null
+                if (hasGpgKey) {
+                    signAllPublications()
+                }
 
                 pom {
                     name.set(project.name)
                     description.set("Kotlin Multiplatform library by MoonDeveloper")
-                    url.set("https://github.com/sun941003/moon-kmp-libs")
+                    url.set("https://github.com/moondev-studio/moon-kmp-libs")
 
                     licenses {
                         license {
@@ -33,15 +34,33 @@ class MoonPublishPlugin : Plugin<Project> {
 
                     developers {
                         developer {
-                            id.set("moondeveloper")
+                            id.set("moondev-studio")
                             name.set("MoonDeveloper")
                         }
                     }
 
                     scm {
-                        url.set("https://github.com/sun941003/moon-kmp-libs")
-                        connection.set("scm:git:git://github.com/sun941003/moon-kmp-libs.git")
-                        developerConnection.set("scm:git:ssh://github.com/sun941003/moon-kmp-libs.git")
+                        url.set("https://github.com/moondev-studio/moon-kmp-libs")
+                        connection.set("scm:git:git://github.com/moondev-studio/moon-kmp-libs.git")
+                        developerConnection.set("scm:git:ssh://github.com/moondev-studio/moon-kmp-libs.git")
+                    }
+                }
+            }
+
+            // Add GitHub Packages as secondary publish target
+            pluginManager.withPlugin("maven-publish") {
+                configure<PublishingExtension> {
+                    repositories {
+                        maven {
+                            name = "GitHubPackages"
+                            url = uri("https://maven.pkg.github.com/moondev-studio/moon-kmp-libs")
+                            credentials {
+                                username = findProperty("gpr.user") as String?
+                                    ?: System.getenv("GITHUB_ACTOR")
+                                password = findProperty("gpr.key") as String?
+                                    ?: System.getenv("GH_PAT")
+                            }
+                        }
                     }
                 }
             }
