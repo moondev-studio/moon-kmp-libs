@@ -159,13 +159,15 @@ jobs:
           fi
 
       - name: Publish to Maven Central
-        run: >
-          ./gradlew publishAllPublicationsToMavenCentralRepository
-          -PVERSION_NAME=${{ steps.version.outputs.VERSION }}
-          --no-configuration-cache
+        run: |
+          ./gradlew publishAllPublicationsToMavenCentralRepository \
+            -PVERSION_NAME=${{ steps.version.outputs.VERSION }} \
+            --no-configuration-cache \
+            --no-daemon \
+            --stacktrace
         env:
-          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
-          MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyId: A5B5E603
           ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.GPG_PRIVATE_KEY }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.GPG_PASSPHRASE }}
