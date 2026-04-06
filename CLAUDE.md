@@ -41,9 +41,9 @@ KMP (Kotlin 2.3.0) + Compose Multiplatform + Material 3 + Koin 4.1.1 + Room KMP 
 # [moon-kmp-libs 프로젝트 전용]
 
 ## 현재 상태
-- 7개 OSS 모듈 (analytics, auth, billing, sync, ui, i18n, ocr)
+- 11개 OSS 모듈 (analytics, auth, billing, sync, ui, i18n, ocr, maps, liveactivity, health, wearable)
 - Hardening Phase 완료 (Step 0~9)
-- 테스트: 130 @Test (desktopTest 기준)
+- 테스트: 178 @Test (desktopTest 기준)
 - Maven Central: publishToMavenLocal 검증 완료
 - Dokka API 문서 생성 설정 완료
 
@@ -57,6 +57,10 @@ KMP (Kotlin 2.3.0) + Compose Multiplatform + Material 3 + Koin 4.1.1 + Room KMP 
 | moon-ui-kmp | Adaptive Compose components | 9 | compose-multiplatform |
 | moon-i18n-kmp | Hybrid i18n (bundle + on-demand) | 7 | kotlinx-coroutines |
 | moon-ocr-kmp | OCR & receipt parsing interfaces | 8 | 없음 (순수 인터페이스) |
+| moon-maps-kmp | Maps abstraction (Google Maps/Apple Maps) | - | kotlinx-coroutines, kotlinx-datetime |
+| moon-liveactivity-kmp | Live Activity abstraction (iOS) | - | kotlinx-coroutines |
+| moon-health-kmp | Health data abstraction (HealthConnect/HealthKit) | 27 | kotlinx-coroutines, kotlinx-datetime |
+| moon-wearable-kmp | Wearable connectivity (Wear OS/watchOS) | 21 | kotlinx-coroutines |
 
 ## 기술 스택
 - Kotlin 2.3.0, CMP 1.10.0, AGP 8.11.2, Gradle 8.14.4
