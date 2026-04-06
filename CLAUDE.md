@@ -86,3 +86,12 @@ KMP (Kotlin 2.3.0) + Compose Multiplatform + Material 3 + Koin 4.1.1 + Room KMP 
 - 이 레포의 모든 모듈은 Firebase, Google Play, Apple SDK에 의존하면 안 됨
 - 허용: kotlinx-coroutines, kotlinx-datetime, compose-multiplatform
 - OSS 모듈 간 의존은 허용 (예: moon-ui-kmp -> moon-sync-kmp)
+
+## OSS 모듈 릴리즈 CC 표준
+```bash
+SESS=$(moon_start "moon-xxx-kmp v1.x.x 개발")
+moon_progress "PHASE_B" "인터페이스 구현 완료"
+moon_progress "PHASE_C" "테스트 PASS"
+moon_done "moon-xxx-kmp 개발" "42 tests PASS, Maven Local 배포" "Maven Central 배포"
+moon_wp [ID] done "v1.x.x 완료"
+```
