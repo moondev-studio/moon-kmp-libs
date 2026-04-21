@@ -60,12 +60,13 @@ class StoreKitBillingEngine : BillingEngine {
         return suspendCancellableCoroutine { cont ->
             IOSBillingBridge.requestPurchase(
                 productId = product.id,
-                onSuccess = {
+                onSuccess = { receipt, transactionId ->
                     _purchaseState.value = PurchaseState.Purchased(product.id)
                     if (cont.isActive) cont.resume(
                         PurchaseResult.Success(
                             productId = product.id,
-                            purchaseToken = "ios_purchase"
+                            purchaseToken = transactionId,
+                            receipt = receipt
                         )
                     )
                 },
@@ -95,7 +96,8 @@ class StoreKitBillingEngine : BillingEngine {
                         if (cont.isActive) cont.resume(
                             PurchaseResult.Success(
                                 productId = "restored",
-                                purchaseToken = "ios_restore"
+                                purchaseToken = "ios_restore",
+                                receipt = ""
                             )
                         )
                     } else {

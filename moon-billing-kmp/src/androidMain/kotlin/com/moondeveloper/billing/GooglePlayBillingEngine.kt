@@ -214,7 +214,11 @@ class GooglePlayBillingEngine(
 
         when (billingResult.responseCode) {
             BillingClient.BillingResponseCode.OK -> {
-                PurchaseResult.Success(productId = product.id, purchaseToken = "pending")
+                PurchaseResult.Success(
+                    productId = product.id,
+                    purchaseToken = "pending",
+                    receipt = ""
+                )
             }
             BillingClient.BillingResponseCode.USER_CANCELED -> {
                 _purchaseState.value = PurchaseState.Idle
@@ -255,7 +259,8 @@ class GooglePlayBillingEngine(
                             if (cont.isActive) cont.resume(
                                 PurchaseResult.Success(
                                     productId = "restored",
-                                    purchaseToken = "restored"
+                                    purchaseToken = "restored",
+                                    receipt = ""
                                 )
                             )
                         } else {

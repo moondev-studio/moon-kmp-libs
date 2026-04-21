@@ -52,13 +52,21 @@ class FakeBillingEngine : BillingEngine {
         purchasedProduct = product
         if (shouldFail) return PurchaseResult.Error(failException)
         _purchaseState.value = PurchaseState.Purchased(product.id)
-        return PurchaseResult.Success(productId = product.id, purchaseToken = "fake_token_${product.id}")
+        return PurchaseResult.Success(
+            productId = product.id,
+            purchaseToken = "fake_token_${product.id}",
+            receipt = "fake_receipt_${product.id}"
+        )
     }
 
     override suspend fun restorePurchases(): PurchaseResult {
         restoreCalled = true
         if (shouldFail) return PurchaseResult.Error(failException)
-        return PurchaseResult.Success(productId = "restored", purchaseToken = "fake_restore_token")
+        return PurchaseResult.Success(
+            productId = "restored",
+            purchaseToken = "fake_restore_token",
+            receipt = ""
+        )
     }
 
     override suspend fun consumePurchase(purchaseToken: String): Boolean {

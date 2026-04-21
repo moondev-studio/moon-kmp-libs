@@ -83,6 +83,116 @@ when (val check = limitChecker.canUse("settlement")) {
 | iOS | Supported |
 | Desktop (JVM) | Supported |
 
+## Migration Guide: v1 → v2
+
+Version 2.0.0 is a breaking change focused on end-to-end propagation of StoreKit 2 receipt
+and transaction identifiers, so that KMP consumers can forward them to server-side receipt
+validation without losing information at the bridge.
+
+### 1. `PurchaseResult.Success` now requires `receipt`
+
+**v1.x (removed)**:
+
+```kotlin
+PurchaseResult.Success(
+    productId = product.id,
+    purchaseToken = token
+)
+```
+
+**v2.0+ (required)**:
+
+```kotlin
+PurchaseResult.Success(
+    productId = product.id,
+    purchaseToken = token,
+    receipt = receipt  // Android: Purchase.originalJson; iOS: jwsRepresentation; "" otherwise
+)
+```
+
+### 2. `IOSBillingBridge.requestPurchase.onSuccess` signature change
+
+**v1.x (removed)**:
+
+```kotlin
+IOSBillingBridge.requestPurchase(
+    productId = productId,
+    onSuccess = { /* no payload */ },
+    onError = { msg -> /* ... */ },
+    onCancelled = { /* ... */ }
+)
+```
+
+**v2.0+ (required)**:
+
+```kotlin
+IOSBillingBridge.requestPurchase(
+    productId = productId,
+    onSuccess = { receipt, transactionId ->
+        // Forward these to your server verification layer.
+    },
+    onError = { msg -> /* ... */ },
+    onCancelled = { /* ... */ }
+)
+```
+
+### 3. `IOSBillingBridge.completePurchase` is now 5 parameters
+
+Called from Swift to deliver the StoreKit outcome back to Kotlin.
+
+**v1.x (removed)**:
+
+```swift
+IOSBillingBridge.shared.completePurchase(
+    success: true,
+    cancelled: false,
+    error: nil
+)
+```
+
+**v2.0+ (required)**:
+
+```swift
+// From your StoreKit 2 Transaction handler:
+let receipt = transaction.jwsRepresentation
+let transactionId = String(transaction.id)
+
+IOSBillingBridge.shared.completePurchase(
+    success: true,
+    cancelled: false,
+    error: nil,
+    receipt: receipt,
+    transactionId: transactionId
+)
+
+// Cancel / error branches: pass empty strings.
+IOSBillingBridge.shared.completePurchase(
+    success: false,
+    cancelled: true,
+    error: nil,
+    receipt: "",
+    transactionId: ""
+)
+```
+
+### 4. Android consumers
+
+`GooglePlayBillingEngine` currently passes `receipt = ""` because Google Play receipts are
+delivered through `Purchase.originalJson` at the listener level rather than at purchase start.
+Consumers that need Android server verification should populate `receipt` inside their own
+`PurchaseResult.Success` construction or extend `GooglePlayBillingEngine` accordingly.
+
+### 5. Fake / NoOp engines
+
+`FakeBillingEngine.purchase` returns `receipt = "fake_receipt_<productId>"` so test assertions
+can inspect the wiring without adopting real receipts. Update any test-side constructions of
+`PurchaseResult.Success` to pass a receipt argument (empty string is fine).
+
+### Backward Compatibility
+
+None. All v1.x call sites of `PurchaseResult.Success` and the iOS purchase callbacks must be
+updated before upgrading.
+
 ## License
 
 Apache License 2.0

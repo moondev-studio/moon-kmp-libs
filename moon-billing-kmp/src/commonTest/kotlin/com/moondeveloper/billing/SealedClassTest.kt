@@ -9,7 +9,7 @@ class SealedClassTest {
     @Test
     fun purchaseResult_pattern_matching() {
         val results: List<PurchaseResult> = listOf(
-            PurchaseResult.Success("prod_1", "token_1"),
+            PurchaseResult.Success("prod_1", "token_1", "receipt_1"),
             PurchaseResult.Cancelled("prod_2"),
             PurchaseResult.Error(RuntimeException("fail")),
             PurchaseResult.AlreadyOwned("prod_3")
