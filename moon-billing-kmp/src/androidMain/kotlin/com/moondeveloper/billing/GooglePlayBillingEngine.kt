@@ -14,6 +14,7 @@ import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
 import com.android.billingclient.api.acknowledgePurchase
+import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -26,6 +27,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.lang.ref.WeakReference
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.resume
 
 /**
@@ -51,6 +53,16 @@ class GooglePlayBillingEngine(
     private var reconnectAttempts = 0
     private val maxReconnectAttempts = 3
 
+    // Active purchase continuation — set when purchase() is awaiting the async
+    // onPurchasesUpdated callback. Resumed with the real purchaseToken + orderId.
+    // WP[139]: receipt/transactionId must carry the real Play Billing values.
+    private val pendingPurchase = AtomicReference<PendingPurchase?>(null)
+
+    private data class PendingPurchase(
+        val productId: String,
+        val continuation: CancellableContinuation<PurchaseResult>
+    )
+
     companion object {
         private var activityRef: WeakReference<Activity>? = null
 
@@ -62,19 +74,31 @@ class GooglePlayBillingEngine(
     private val purchasesUpdatedListener = PurchasesUpdatedListener { billingResult, purchases ->
         when (billingResult.responseCode) {
             BillingClient.BillingResponseCode.OK -> {
-                if (purchases != null) {
-                    scope.launch {
-                        for (purchase in purchases) {
-                            handlePurchase(purchase)
-                        }
+                if (purchases.isNullOrEmpty()) {
+                    completePendingPurchase(
+                        PurchaseResult.Error(RuntimeException("OK response but no purchases"))
+                    )
+                    return@PurchasesUpdatedListener
+                }
+                scope.launch {
+                    for (purchase in purchases) {
+                        handlePurchase(purchase)
                     }
                 }
             }
             BillingClient.BillingResponseCode.USER_CANCELED -> {
                 _purchaseState.value = PurchaseState.Idle
+                val pending = pendingPurchase.getAndSet(null)
+                pending?.continuation?.takeIf { it.isActive }?.resume(
+                    PurchaseResult.Cancelled(pending.productId)
+                )
             }
             BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> {
+                val pending = pendingPurchase.getAndSet(null)
                 scope.launch { restorePurchases() }
+                pending?.continuation?.takeIf { it.isActive }?.resume(
+                    PurchaseResult.AlreadyOwned(pending.productId)
+                )
             }
             BillingClient.BillingResponseCode.SERVICE_DISCONNECTED,
             BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
@@ -83,13 +107,42 @@ class GooglePlayBillingEngine(
                     "Billing service unavailable. Please try again."
                 )
                 startConnection()
+                completePendingPurchase(
+                    PurchaseResult.Error(
+                        RuntimeException(
+                            "Billing service unavailable (code ${billingResult.responseCode})"
+                        )
+                    )
+                )
+            }
+            BillingClient.BillingResponseCode.ITEM_UNAVAILABLE -> {
+                _purchaseState.value = PurchaseState.Error(
+                    "Item unavailable: ${billingResult.debugMessage ?: "unknown"}"
+                )
+                completePendingPurchase(
+                    PurchaseResult.Error(
+                        RuntimeException("Item unavailable: ${billingResult.debugMessage}")
+                    )
+                )
             }
             else -> {
                 _purchaseState.value = PurchaseState.Error(
                     "Code ${billingResult.responseCode}: ${billingResult.debugMessage ?: "Purchase failed"}"
                 )
+                completePendingPurchase(
+                    PurchaseResult.Error(
+                        RuntimeException(
+                            "Billing error ${billingResult.responseCode}: ${billingResult.debugMessage}"
+                        )
+                    )
+                )
             }
         }
+    }
+
+    private fun completePendingPurchase(result: PurchaseResult) {
+        val pending = pendingPurchase.getAndSet(null) ?: return
+        pending.continuation.takeIf { it.isActive }?.resume(result)
     }
 
     override suspend fun initialize() {
@@ -200,39 +253,44 @@ class GooglePlayBillingEngine(
             return@withContext PurchaseResult.Error(IllegalStateException("Activity is finishing"))
         }
 
-        _purchaseState.value = PurchaseState.Loading
-
-        val productDetailsParams = BillingFlowParams.ProductDetailsParams.newBuilder()
-            .setProductDetails(details)
-            .build()
-
-        val billingFlowParams = BillingFlowParams.newBuilder()
-            .setProductDetailsParamsList(listOf(productDetailsParams))
-            .build()
-
-        val billingResult = client.launchBillingFlow(activity, billingFlowParams)
-
-        when (billingResult.responseCode) {
-            BillingClient.BillingResponseCode.OK -> {
-                PurchaseResult.Success(
-                    productId = product.id,
-                    purchaseToken = "pending",
-                    receipt = ""
+        suspendCancellableCoroutine<PurchaseResult> { cont ->
+            val newPending = PendingPurchase(productId = product.id, continuation = cont)
+            if (!pendingPurchase.compareAndSet(null, newPending)) {
+                if (cont.isActive) cont.resume(
+                    PurchaseResult.Error(IllegalStateException("A purchase is already in progress"))
                 )
+                return@suspendCancellableCoroutine
             }
-            BillingClient.BillingResponseCode.USER_CANCELED -> {
-                _purchaseState.value = PurchaseState.Idle
-                PurchaseResult.Cancelled(product.id)
+
+            cont.invokeOnCancellation {
+                pendingPurchase.compareAndSet(newPending, null)
             }
-            BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> {
-                PurchaseResult.AlreadyOwned(product.id)
-            }
-            else -> {
+
+            _purchaseState.value = PurchaseState.Loading
+
+            val productDetailsParams = BillingFlowParams.ProductDetailsParams.newBuilder()
+                .setProductDetails(details)
+                .build()
+
+            val billingFlowParams = BillingFlowParams.newBuilder()
+                .setProductDetailsParamsList(listOf(productDetailsParams))
+                .build()
+
+            val billingResult = client.launchBillingFlow(activity, billingFlowParams)
+
+            if (billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
+                pendingPurchase.compareAndSet(newPending, null)
                 _purchaseState.value = PurchaseState.Error(
-                    billingResult.debugMessage ?: "Purchase failed"
+                    billingResult.debugMessage ?: "launchBillingFlow failed"
                 )
-                PurchaseResult.Error(RuntimeException(billingResult.debugMessage ?: "Purchase failed"))
+                if (cont.isActive) cont.resume(
+                    PurchaseResult.Error(
+                        RuntimeException(billingResult.debugMessage ?: "launchBillingFlow failed")
+                    )
+                )
             }
+            // On OK: keep suspending; purchasesUpdatedListener → handlePurchase will
+            // resume with the real purchaseToken + orderId (WP[139] fix).
         }
     }
 
@@ -306,7 +364,15 @@ class GooglePlayBillingEngine(
     }
 
     private suspend fun handlePurchase(purchase: Purchase) {
-        if (purchase.purchaseState != Purchase.PurchaseState.PURCHASED) return
+        if (purchase.purchaseState != Purchase.PurchaseState.PURCHASED) {
+            // PENDING / UNSPECIFIED — surface as error to any awaiting purchase()
+            completePendingPurchase(
+                PurchaseResult.Error(
+                    RuntimeException("Purchase not complete: state=${purchase.purchaseState}")
+                )
+            )
+            return
+        }
         if (!purchase.isAcknowledged) {
             val params = AcknowledgePurchaseParams.newBuilder()
                 .setPurchaseToken(purchase.purchaseToken)
@@ -316,11 +382,31 @@ class GooglePlayBillingEngine(
                 _purchaseState.value = PurchaseState.Error(
                     "Acknowledgment failed: ${result?.debugMessage}"
                 )
+                completePendingPurchase(
+                    PurchaseResult.Error(
+                        RuntimeException("Acknowledgment failed: ${result?.debugMessage}")
+                    )
+                )
                 return
             }
         }
         for (productId in purchase.products) {
             _purchaseState.value = PurchaseState.Purchased(productId)
         }
+        // WP[139] fix: propagate the real Play Billing identifiers up to
+        // BillingEngineAdapter so server verification receives purchaseToken
+        // instead of the previous "" placeholder. Mapping matches iOS:
+        //   PurchaseReceipt.receipt      = purchase.purchaseToken  (server verify)
+        //   PurchaseReceipt.transactionId = purchase.orderId       (audit trail)
+        val productId = purchase.products.firstOrNull()
+            ?: pendingPurchase.get()?.productId
+            ?: ""
+        completePendingPurchase(
+            PurchaseResult.Success(
+                productId = productId,
+                purchaseToken = purchase.orderId ?: "",
+                receipt = purchase.purchaseToken
+            )
+        )
     }
 }
